@@ -1,15 +1,14 @@
 mod structs;
 
-use std::{collections::HashMap, clone::Clone, io::{BufRead, BufReader}, fs::File};
+use std::{collections::HashMap, clone::Clone, io::BufRead};
 use reqwest::{Client, StatusCode};
+use ears::{Sound, AudioController};
 
 const ENDPOINT: &str = "https://api.noopschallenge.com/drumbot/patterns/";
 
 fn main() {
     let mut patterns = HashMap::new();
     let mut instruments = HashMap::new();
-    // Create an audio listening device.
-    let device = rodio::default_output_device().unwrap();
     // Create a HTTP client.
     let client = Client::new();
     
@@ -51,11 +50,15 @@ fn main() {
     // Load instrument samples.
     for track in &pattern.tracks {
         let name = track.instrument.clone();
-        let file = File::open(format!("samples/{}.wav", name)).unwrap();
-        instruments.insert(name, file);
+        let file_name = format!("samples/{}.wav", name);
+        let mut sound = Sound::new(&file_name[..]).unwrap();
+        instruments.insert(name, sound);
     }
 
     // TODO: Create a loop that plays the pattern.
+    //let tps = &pattern.beats_per_minute
+    let mut track = &mut instruments.get_mut(&pattern.tracks[0].instrument.clone()).unwrap();
+    track.play();
 
     //If Enter/Return is pressed, stop the application.
     std::io::stdin().lock().lines().next().unwrap().unwrap();
