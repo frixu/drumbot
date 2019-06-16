@@ -1,6 +1,6 @@
 mod structs;
 
-use std::{collections::HashMap, clone::Clone, io::BufRead};
+use std::{collections::HashMap, clone::Clone, io::BufRead, thread, time::Duration};
 use reqwest::{Client, StatusCode};
 use ears::{Sound, AudioController};
 
@@ -51,15 +51,29 @@ fn main() {
     for track in &pattern.tracks {
         let name = track.instrument.clone();
         let file_name = format!("samples/{}.wav", name);
-        let mut sound = Sound::new(&file_name[..]).unwrap();
+        let sound = Sound::new(&file_name[..]).unwrap();
         instruments.insert(name, sound);
     }
 
-    // TODO: Create a loop that plays the pattern.
-    //let tps = &pattern.beats_per_minute
-    let mut track = &mut instruments.get_mut(&pattern.tracks[0].instrument.clone()).unwrap();
-    track.play();
+    println!("Here you go! Stop playback with ^C.");
 
-    //If Enter/Return is pressed, stop the application.
-    std::io::stdin().lock().lines().next().unwrap().unwrap();
+    // Play the pattern.
+    let mut tick_number : u16 = 0;
+    loop {
+        for track in &pattern.tracks {
+            // If the step is marked as 1, play the sound.
+            if track.steps[tick_number as usize] == 1 {
+                let name = track.instrument.clone();
+                let sound = &mut instruments.get_mut(&name).unwrap();
+                sound.play();
+            }
+        }
+        // 60000 milliseconds in a minute. Assuming quadruple drum pattern.
+        thread::sleep(Duration::from_millis((15000 / pattern.beats_per_minute) as u64));
+        // Move to the next tick. If the pattern is over, restart.
+        tick_number += 1;
+        if tick_number == pattern.step_count {
+            tick_number = 0;
+        }
+    }
 }
